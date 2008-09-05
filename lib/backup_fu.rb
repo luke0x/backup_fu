@@ -1,6 +1,8 @@
 require 'yaml'
 require 'active_support'
 $: << File.expand_path(File.dirname(__FILE__) + "/../vendor/aws-s3-0.5.1/lib/")
+$: << File.expand_path(File.dirname(__FILE__) + "/../vendor/mime-types-1.15/lib/")
+require 'mime/types'
 require 'aws/s3'
 
 class BackupFuConfigError < StandardError; end
