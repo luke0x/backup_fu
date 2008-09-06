@@ -1,9 +1,7 @@
 require 'yaml'
 require 'active_support'
-$: << File.expand_path(File.dirname(__FILE__) + "/../vendor/aws-s3-0.5.1/lib/")
-$: << File.expand_path(File.dirname(__FILE__) + "/../vendor/mime-types-1.15/lib/")
 require 'mime/types'
-require 'aws/s3'
+require 'right_aws'
 
 class BackupFuConfigError < StandardError; end
 class S3ConnectError < StandardError; end
@@ -63,13 +61,11 @@ class BackupFu
   
   def backup
     dump
-    establish_s3_connection
     
     file = final_db_dump_path()
     puts "\nBacking up to S3: #{file}\n" if @verbose
     
-    AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
-    
+    store_file(file)
   end
   
   ## Static-file Dump/Backup methods
@@ -110,13 +106,11 @@ class BackupFu
   
   def backup_static
     dump_static
-    establish_s3_connection
     
     file = final_static_dump_path()
     puts "\nBacking up Static files to S3: #{file}\n" if @verbose
     
-    AWS::S3::S3Object.store(File.basename(file), open(file), @fu_conf[:s3_bucket], :access => :private)
-    
+    store_file(file)
   end
   
   def cleanup
@@ -139,14 +133,19 @@ class BackupFu
   
   private
   
-  def establish_s3_connection
-    unless AWS::S3::Base.connected?
-      AWS::S3::Base.establish_connection!(
-        :access_key_id => @fu_conf[:aws_access_key_id],
-        :secret_access_key => @fu_conf[:aws_secret_access_key]
-      )
-    end
-    raise S3ConnectError, "\nERROR: Connection to Amazon S3 failed." unless AWS::S3::Base.connected?
+  def s3
+    @s3 ||= RightAws::S3.new(@fu_conf[:aws_access_key_id],
+                             @fu_conf[:aws_secret_access_key])
+  end
+  
+  def s3_bucket
+    @s3_bucket ||= s3.bucket(@fu_conf[:s3_bucket], true, 'private')
+  end
+  
+  def store_file(file)
+    key = s3_bucket.key(File.basename(file))
+    key.data = open(file)
+    key.put(nil, 'private')
   end
   
   def check_conf
