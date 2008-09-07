@@ -32,12 +32,13 @@ class BackupFu
     if @db_conf.has_key?(:password) && !@db_conf[:password].blank?
       password = "--password=#{@db_conf[:password]}"
     end
+    
     full_dump_path = File.join(dump_base_path, db_filename)
     case @db_conf[:adapter]
-    when 'postgresql'
-      cmd = niceify "PGPASSWORD=#{password} #{dump_path} --user=#{@db_conf[:username]} --host=#{host} --port=#{port} #{@db_conf[:database]} > #{full_dump_path}"
-    when 'mysql'
-      cmd = niceify "#{dump_path} #{@fu_conf[:mysqldump_options]} #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
+      when 'postgresql'
+        cmd = niceify "PGPASSWORD=#{password} #{dump_path} --user=#{@db_conf[:username]} --host=#{host} --port=#{port} #{@db_conf[:database]} > #{full_dump_path}"
+      when 'mysql'
+        cmd = niceify "#{dump_path} #{@fu_conf[:mysqldump_options]} #{host} #{port} --user=#{@db_conf[:username]} #{password} #{@db_conf[:database]} > #{full_dump_path}"
     end
     puts cmd if @verbose
     `#{cmd}`
@@ -55,6 +56,9 @@ class BackupFu
       cmd = niceify "gzip -f #{tar_path}"
       puts "\nGzip: #{cmd}" if @verbose
       `#{cmd}`
+      
+      # remove unpacked
+      File.unlink full_dump_path
     end
     
   end
