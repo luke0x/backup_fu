@@ -11,8 +11,12 @@ class BackupFu
   def initialize
     db_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'database.yml')) 
     @db_conf = db_conf[RAILS_ENV].symbolize_keys
-    fu_conf = YAML.load_file(File.join(RAILS_ROOT, 'config', 'backup_fu.yml'))
-    @fu_conf = fu_conf[RAILS_ENV].symbolize_keys
+    
+    raw_config = File.read(File.join(RAILS_ROOT, 'config', 'backup_fu.yml'))
+    erb_config = ERB.new(raw_config).result 
+    fu_conf    = YAML.load(erb_config)
+    @fu_conf   = fu_conf[RAILS_ENV].symbolize_keys
+    
     @fu_conf[:mysqldump_options] ||= '--complete-insert --skip-extended-insert'
     @verbose = !@fu_conf[:verbose].nil?
     @timestamp = datetime_formatted
@@ -49,6 +53,7 @@ class BackupFu
 
       # TAR it up
       cmd = niceify "tar -cf #{tar_path} -C #{dump_base_path} #{db_filename}"
+      # add skip folders
       puts "\nTar: #{cmd}\n" if @verbose
       `#{cmd}`
 
