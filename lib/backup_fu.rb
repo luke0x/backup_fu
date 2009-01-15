@@ -2,6 +2,7 @@ require 'yaml'
 require 'active_support'
 require 'mime/types'
 require 'right_aws'
+require 'erb'
 
 class BackupFuConfigError < StandardError; end
 class S3ConnectError < StandardError; end
@@ -50,10 +51,10 @@ class BackupFu
     if !@fu_conf[:disable_tar_gzip]
       
       tar_path = File.join(dump_base_path, db_filename_tarred)
-
+      
       # TAR it up
       cmd = niceify "tar -cf #{tar_path} -C #{dump_base_path} #{db_filename}"
-      # add skip folders
+      
       puts "\nTar: #{cmd}\n" if @verbose
       `#{cmd}`
 
@@ -99,7 +100,7 @@ class BackupFu
       end
       
       # TAR
-      cmd = niceify "tar -#{tar_switch}f #{static_tar_path} #{p}"
+      cmd = niceify "tar -#{tar_switch}f #{static_tar_path} #{p} #{skips}"
       puts "\nTar: #{cmd}\n" if @verbose
       `#{cmd}`
       
@@ -228,6 +229,18 @@ class BackupFu
 
   def datetime_formatted
     Time.now.strftime("%Y-%m-%d") + "_#{ Time.now.tv_sec }"
+  end
+  
+  def skips
+    return '' unless @fu_conf[:skips]
+    
+    raise BackupFuConfigError, 'skip option is not array or string' unless @fu_conf[:skips].kind_of?(Array) || @fu_conf[:skips].kind_of?(String)
+
+    if @fu_conf[:skips].kind_of?(Array)
+      @fu_conf[:skips].collect{|skip| " --exclude=#{skip} " }.join
+    else
+      @fu_conf[:skips]
+    end
   end
   
 end
