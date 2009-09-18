@@ -72,7 +72,7 @@ class BackupFu
 
     if !@fu_conf[:disable_compression]
       compress_db(dump_base_path, db_filename) 
-      File.unlink full_dump_path
+      File.unlink full_dump_path if File.exists?(full_dump_path)
     end
   end
 
@@ -162,7 +162,7 @@ class BackupFu
 
   def cleanup
     count = @fu_conf[:keep_backups].to_i
-    backups = Dir.glob("#{dump_base_path}/*.{sql}")
+    backups = Dir.glob("#{dump_base_path}/*.{sql}") + Dir.glob("#{dump_base_path}/*.{zip}") + Dir.glob("#{dump_base_path}/*.{gz}")
     if count >= backups.length
       puts "no old backups to cleanup"
     else
@@ -178,7 +178,7 @@ class BackupFu
         end
       end
 
-      files_to_remove.each do |f|
+      files_to_remove.uniq.each do |f|
         File.delete(f)
       end
 

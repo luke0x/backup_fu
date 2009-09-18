@@ -41,6 +41,7 @@ namespace :backup_fu do
     b = BackupFu.new
     b.backup
     b.backup_static
+    b.cleanup
   end
   
   desc "Clean up old backups. By default 5 backups are kept (you can change this with with keep_backups key in config/backup_fu.yml)."
